@@ -1,23 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps/ui/widgets/app_bar.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
-class LocationTrackerScreen extends StatefulWidget {
-  const LocationTrackerScreen({super.key});
-
+class MapScreen extends StatefulWidget {
   @override
-  State<LocationTrackerScreen> createState() => _LocationTrackerScreenState();
+  _MapScreenState createState() => _MapScreenState();
 }
 
-class _LocationTrackerScreenState extends State<LocationTrackerScreen> {
+class _MapScreenState extends State<MapScreen> {
+  Position? _currentPosition; // Nullable Position
+  GoogleMapController? _googleMapController; // Nullable GoogleMapController
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation(); // Fetch current location when the screen initializes
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      setState(() {
+        _currentPosition = position; // Update the current position
+      });
+
+      // Move the map camera to the current location once it's obtained
+      _googleMapController?.animateCamera(
+        CameraUpdate.newLatLng(
+          LatLng(position.latitude, position.longitude),
+        ),
+      );
+    } catch (e) {
+      print('Could not get location: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: LocationTrackerAppBar(),
+      appBar: AppBar(
+        title: Text('Google Map Example'),
+      ),
       body: GoogleMap(
+        zoomControlsEnabled: true,
+        myLocationButtonEnabled: true,
+        myLocationEnabled: true,
+        mapType: MapType.normal,
         initialCameraPosition: CameraPosition(
-            target: LatLng(23.75303455618254, 89.64498547075718)
+          target: _currentPosition != null
+              ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+              : LatLng(23.698033747588205, 89.6865426376462), // Default value
+          zoom: 15.0,
         ),
+        onMapCreated: (GoogleMapController controller) {
+          _googleMapController = controller;
+          if (_currentPosition != null) {
+            _googleMapController?.animateCamera(
+              CameraUpdate.newLatLng(
+                LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+              ),
+            );
+          }
+        },
+        onTap: (LatLng latLng) {
+          print(latLng);
+        },
       ),
     );
   }
