@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:google_maps/ui/screens/location_tracker_screen.dart';
+
+import '../ui/controllerBinder/controller_binder.dart';
 
 
 class MyApp extends StatelessWidget {
@@ -7,11 +10,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-      ),
+    return GetMaterialApp(
+
       debugShowCheckedModeBanner: false,
-      home:  MapScreen(),
+      initialBinding: ControllerBinder(),
+      home:  const LocationTrackerScreen(),
     );
   }
 }

@@ -1,72 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_state_manager/src/simple/get_state.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import '../controller/location_controller.dart';
+import '../widgets/app_bar.dart';
 
-class MapScreen extends StatefulWidget {
+class LocationTrackerScreen extends StatefulWidget {
+  const LocationTrackerScreen({super.key});
+
   @override
-  _MapScreenState createState() => _MapScreenState();
+  State<LocationTrackerScreen> createState() => _LocationTRackerScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
-  Position? _currentPosition; // Nullable Position
-  GoogleMapController? _googleMapController; // Nullable GoogleMapController
-
-  @override
-  void initState() {
-    super.initState();
-    _getCurrentLocation(); // Fetch current location when the screen initializes
-  }
-
-  Future<void> _getCurrentLocation() async {
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      setState(() {
-        _currentPosition = position; // Update the current position
-      });
-
-      // Move the map camera to the current location once it's obtained
-      _googleMapController?.animateCamera(
-        CameraUpdate.newLatLng(
-          LatLng(position.latitude, position.longitude),
-        ),
-      );
-    } catch (e) {
-      print('Could not get location: $e');
-    }
-  }
+class _LocationTRackerScreenState extends State<LocationTrackerScreen> {
+  late GoogleMapController _googleMapController;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Google Map Example'),
-      ),
-      body: GoogleMap(
-        zoomControlsEnabled: true,
-        myLocationButtonEnabled: true,
-        myLocationEnabled: true,
-        mapType: MapType.normal,
-        initialCameraPosition: CameraPosition(
-          target: _currentPosition != null
-              ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-              : LatLng(23.698033747588205, 89.6865426376462), // Default value
-          zoom: 15.0,
-        ),
-        onMapCreated: (GoogleMapController controller) {
-          _googleMapController = controller;
-          if (_currentPosition != null) {
-            _googleMapController?.animateCamera(
-              CameraUpdate.newLatLng(
-                LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+      appBar: LocationTrackerAppBar(),
+      body: GetBuilder<HomeController>(
+        builder: (controller) {
+          return controller.currentPosition == null
+              ? const Center(
+            child: CircularProgressIndicator(),
+          )
+              : GoogleMap(
+            onMapCreated: (GoogleMapController controller) {
+              _googleMapController = controller;
+            },
+            initialCameraPosition: CameraPosition(
+              target: LatLng(
+                controller.currentPosition!.latitude,
+                controller.currentPosition!.longitude,
               ),
-            );
-          }
-        },
-        onTap: (LatLng latLng) {
-          print(latLng);
+              zoom: 15,
+            ),
+            onTap: (LatLng latLng) {
+              //print(latLng);
+            },
+            polylines: <Polyline>{
+              Polyline(
+                polylineId: const PolylineId("user_polyline"),
+                color: Colors.blue,
+                width: 5,
+                points: controller.polylineCoordinates,
+              )
+            },
+            markers: <Marker>{
+              Marker(
+                markerId: const MarkerId("sample-marker-id"),
+                infoWindow: InfoWindow(
+                  title: "My current location",
+                  snippet:
+                  "${controller.currentPosition!.latitude}, ${controller.currentPosition!.longitude}",
+                ),
+                position: LatLng(
+                  controller.currentPosition!.latitude,
+                  controller.currentPosition!.longitude,
+                ),
+              )
+            },
+          );
         },
       ),
     );
